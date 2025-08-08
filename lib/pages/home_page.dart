@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:jostar_programming/widgets/common/floating_action_button.dart';
-import '../widgets/home/service_overview.dart';
 import '../widgets/home/portofolio_preview.dart';
 import '../widgets/home/why_chosse_us.dart';
 import '../widgets/home/testimonial.dart';
 import '../widgets/home/cta_section.dart';
-import '../core/app_theme.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -18,6 +15,8 @@ class _HomePageState extends State<HomePage>
     with TickerProviderStateMixin {
   late ScrollController _scrollController;
   late AnimationController _floatingButtonController;
+  late AnimationController _backgroundController;
+  late AnimationController _particleController;
   bool _showFloatingButton = false;
 
   @override
@@ -28,12 +27,21 @@ class _HomePageState extends State<HomePage>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    _backgroundController = AnimationController(
+      duration: const Duration(seconds: 20),
+      vsync: this,
+    );
+    _particleController = AnimationController(
+      duration: const Duration(seconds: 15),
+      vsync: this,
+    );
     
     _scrollController.addListener(_onScroll);
+    _backgroundController.repeat();
+    _particleController.repeat();
   }
 
   void _onScroll() {
-    // Show floating button after scrolling past hero section
     if (_scrollController.offset > 200 && !_showFloatingButton) {
       setState(() => _showFloatingButton = true);
       _floatingButtonController.forward();
@@ -47,53 +55,42 @@ class _HomePageState extends State<HomePage>
   void dispose() {
     _scrollController.dispose();
     _floatingButtonController.dispose();
+    _backgroundController.dispose();
+    _particleController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0F),
       body: Stack(
         children: [
-          // Background gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary.withOpacity(0.02),
-                  AppColors.secondary.withOpacity(0.05),
-                  AppColors.accent.withOpacity(0.03),
-                  Colors.white,
-                ],
-                stops: const [0.0, 0.3, 0.7, 1.0],
-              ),
-            ),
-          ),
+          // Epic animated background
+          _buildEpicBackground(),
           
           // Main content
           SingleChildScrollView(
             controller: _scrollController,
             child: Column(
               children: [
-                const HeroSection(),
-                const SizedBox(height: 40),
-                const ServicesOverview(),
-                const SizedBox(height: 40),
+                const EpicHeroSection(),
+                const SizedBox(height: 60),
+                const EpicServicesOverview(),
+                const SizedBox(height: 60),
                 const PortfolioPreview(),
-                const SizedBox(height: 40),
+                const SizedBox(height: 60),
                 const WhyChooseUs(),
-                const SizedBox(height: 40),
+                const SizedBox(height: 60),
                 const Testimonials(),
-                const SizedBox(height: 40),
+                const SizedBox(height: 60),
                 const CTASection(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 40),
               ],
             ),
           ),
           
-          // Floating WhatsApp Button
+          // Epic floating WhatsApp button
           if (_showFloatingButton)
             Positioned(
               right: 20,
@@ -106,72 +103,201 @@ class _HomePageState extends State<HomePage>
                   parent: _floatingButtonController,
                   curve: Curves.elasticOut,
                 )),
-                child: const FloatingWhatsAppButton(),
+                child: const EpicFloatingWhatsAppButton(),
               ),
             ),
         ],
       ),
     );
   }
+
+  Widget _buildEpicBackground() {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_backgroundController, _particleController]),
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment.topLeft,
+              radius: 2.0,
+              colors: [
+                const Color(0xFF1a1a2e).withOpacity(0.8),
+                const Color(0xFF16213e).withOpacity(0.6),
+                const Color(0xFF0f0f23).withOpacity(0.9),
+                const Color(0xFF0A0A0F),
+              ],
+              stops: const [0.0, 0.3, 0.7, 1.0],
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Animated grid pattern
+              _buildAnimatedGrid(),
+              
+              // Floating particles
+              ..._buildParticleSystem(),
+              
+              // Scan lines effect
+              _buildScanLines(),
+              
+              // Gradient overlay
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      const Color(0xFF0A0A0F).withOpacity(0.3),
+                      const Color(0xFF0A0A0F).withOpacity(0.8),
+                    ],
+                    stops: const [0.0, 0.7, 1.0],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedGrid() {
+    return CustomPaint(
+      size: Size.infinite,
+      painter: GridPainter(
+        animation: _backgroundController.value,
+        color: const Color(0xFF00ff88).withOpacity(0.1),
+      ),
+    );
+  }
+
+  List<Widget> _buildParticleSystem() {
+    return List.generate(25, (index) {
+      final random = (index * 7) % 10 / 10;
+      final size = 2.0 + (index % 4);
+      final speed = 0.5 + (index % 3) * 0.3;
+      
+      return Positioned(
+        left: MediaQuery.of(context).size.width * random,
+        top: (index * 50.0) % MediaQuery.of(context).size.height,
+        child: Transform.translate(
+          offset: Offset(
+            50 * _particleController.value * speed * (index.isEven ? 1 : -1),
+            20 * _particleController.value * speed,
+          ),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  [
+                    const Color(0xFF00ff88),
+                    const Color(0xFF00d4ff),
+                    const Color(0xFFff006e),
+                    const Color(0xFF8338ec),
+                  ][index % 4],
+                  Colors.transparent,
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: [
+                    const Color(0xFF00ff88),
+                    const Color(0xFF00d4ff),
+                    const Color(0xFFff006e),
+                    const Color(0xFF8338ec),
+                  ][index % 4].withOpacity(0.6),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildScanLines() {
+    return Positioned.fill(
+      child: CustomPaint(
+        painter: ScanLinesPainter(
+          animation: _backgroundController.value,
+        ),
+      ),
+    );
+  }
 }
 
-// Modern Hero Section with epic design
-class HeroSection extends StatefulWidget {
-  const HeroSection({Key? key}) : super(key: key);
+// Epic Hero Section
+class EpicHeroSection extends StatefulWidget {
+  const EpicHeroSection({Key? key}) : super(key: key);
 
   @override
-  State<HeroSection> createState() => _HeroSectionState();
+  State<EpicHeroSection> createState() => _EpicHeroSectionState();
 }
 
-class _HeroSectionState extends State<HeroSection>
+class _EpicHeroSectionState extends State<EpicHeroSection>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
-  late AnimationController _floatingController;
+  late AnimationController _glowController;
+  late AnimationController _rotationController;
   late List<Animation<double>> _staggeredAnimations;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
     
-    _floatingController = AnimationController(
-      duration: const Duration(seconds: 3),
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 10),
       vsync: this,
     );
 
-    // Staggered animations for different elements
     _staggeredAnimations = [
       Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _animationController,
-          curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+          curve: const Interval(0.0, 0.4, curve: Curves.elasticOut),
         ),
       ),
       Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _animationController,
-          curve: const Interval(0.2, 0.6, curve: Curves.easeOut),
+          curve: const Interval(0.2, 0.6, curve: Curves.elasticOut),
         ),
       ),
       Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _animationController,
-          curve: const Interval(0.4, 0.8, curve: Curves.easeOut),
+          curve: const Interval(0.4, 0.8, curve: Curves.elasticOut),
         ),
       ),
     ];
 
     _animationController.forward();
-    _floatingController.repeat(reverse: true);
+    _glowController.repeat(reverse: true);
+    _rotationController.repeat();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _floatingController.dispose();
+    _glowController.dispose();
+    _rotationController.dispose();
     super.dispose();
   }
 
@@ -182,29 +308,21 @@ class _HeroSectionState extends State<HeroSection>
     return Container(
       width: double.infinity,
       constraints: BoxConstraints(
-        minHeight: isMobile ? 600 : 700,
+        minHeight: isMobile ? 700 : 800,
       ),
-      child: Stack(
-        children: [
-          // Animated background particles
-          ...List.generate(6, (index) => _buildFloatingParticle(index)),
-          
-          // Main content
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 20 : 60,
-              vertical: 60,
-            ),
-            child: Center(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: isMobile 
-                    ? _buildMobileLayout() 
-                    : _buildDesktopLayout(),
-              ),
-            ),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 20 : 60,
+          vertical: 80,
+        ),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: isMobile 
+                ? _buildMobileLayout() 
+                : _buildDesktopLayout(),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -214,12 +332,12 @@ class _HeroSectionState extends State<HeroSection>
       children: [
         Expanded(
           flex: 6,
-          child: _buildHeroContent(),
+          child: _buildEpicHeroContent(),
         ),
-        const SizedBox(width: 80),
+        const SizedBox(width: 100),
         Expanded(
           flex: 5,
-          child: _buildHeroVisual(),
+          child: _buildEpicHeroVisual(),
         ),
       ],
     );
@@ -228,14 +346,14 @@ class _HeroSectionState extends State<HeroSection>
   Widget _buildMobileLayout() {
     return Column(
       children: [
-        _buildHeroContent(),
-        const SizedBox(height: 50),
-        _buildHeroVisual(),
+        _buildEpicHeroContent(),
+        const SizedBox(height: 60),
+        _buildEpicHeroVisual(),
       ],
     );
   }
 
-  Widget _buildHeroContent() {
+  Widget _buildEpicHeroContent() {
     final isMobile = MediaQuery.of(context).size.width < 768;
     
     return AnimatedBuilder(
@@ -246,73 +364,96 @@ class _HeroSectionState extends State<HeroSection>
               ? CrossAxisAlignment.center 
               : CrossAxisAlignment.start,
           children: [
-            // Animated badge
+            // Epic animated badge
             FadeTransition(
               opacity: _staggeredAnimations[0],
               child: SlideTransition(
                 position: Tween<Offset>(
-                  begin: const Offset(0, -0.5),
+                  begin: const Offset(0, -1),
                   end: Offset.zero,
                 ).animate(_staggeredAnimations[0]),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20, 
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.accent.withOpacity(0.2),
-                        AppColors.primary.withOpacity(0.1),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: AppColors.accent.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accent.withOpacity(0.2),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
+                child: AnimatedBuilder(
+                  animation: _glowController,
+                  builder: (context, child) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24, 
+                        vertical: 12,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
-                          shape: BoxShape.circle,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF00ff88).withOpacity(0.2),
+                            const Color(0xFF00d4ff).withOpacity(0.1),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '🚀 Flutter Developer Professional',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: const Color(0xFF00ff88).withOpacity(0.6),
+                          width: 2,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00ff88).withOpacity(
+                              0.3 + 0.2 * _glowController.value,
+                            ),
+                            blurRadius: 20 + 10 * _glowController.value,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00ff88),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00ff88),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ShaderMask(
+                            shaderCallback: (bounds) => LinearGradient(
+                              colors: [
+                                const Color(0xFF00ff88),
+                                const Color(0xFF00d4ff),
+                              ],
+                            ).createShader(bounds),
+                            child: Text(
+                              '⚡ FLUTTER DEVELOPER ELITE',
+                              style: TextStyle(
+                                fontSize: isMobile ? 12 : 14,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.5,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
             
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
             
-            // Main headline with enhanced typography
+            // Epic main headline
             FadeTransition(
               opacity: _staggeredAnimations[1],
               child: SlideTransition(
                 position: Tween<Offset>(
-                  begin: const Offset(0, 0.3),
+                  begin: const Offset(0, 0.5),
                   end: Offset.zero,
                 ).animate(_staggeredAnimations[1]),
                 child: Column(
@@ -320,53 +461,85 @@ class _HeroSectionState extends State<HeroSection>
                       ? CrossAxisAlignment.center 
                       : CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Wujudkan',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: isMobile ? 40 : 64,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: isMobile ? TextAlign.center : TextAlign.left,
-                    ),
                     ShaderMask(
                       shaderCallback: (bounds) => LinearGradient(
                         colors: [
-                          AppColors.primary,
-                          AppColors.secondary,
-                          AppColors.accent,
+                          Colors.white,
+                          const Color(0xFF00d4ff),
                         ],
                       ).createShader(bounds),
                       child: Text(
-                        'Aplikasi Impian',
-                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          fontSize: isMobile ? 40 : 64,
+                        'REVOLUSI',
+                        style: TextStyle(
+                          fontSize: isMobile ? 48 : 72,
                           fontWeight: FontWeight.w900,
-                          height: 1.1,
+                          height: 1.0,
                           color: Colors.white,
+                          letterSpacing: 2,
                         ),
                         textAlign: isMobile ? TextAlign.center : TextAlign.left,
                       ),
                     ),
-                    Text(
-                      'Anda Bersama Kami',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: isMobile ? 40 : 64,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                        color: AppColors.textPrimary,
+                    AnimatedBuilder(
+                      animation: _glowController,
+                      builder: (context, child) {
+                        return ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [
+                              const Color(0xFF00ff88),
+                              const Color(0xFFff006e),
+                              const Color(0xFF8338ec),
+                            ],
+                          ).createShader(bounds),
+                          child: Text(
+                            'DIGITAL',
+                            style: TextStyle(
+                              fontSize: isMobile ? 48 : 72,
+                              fontWeight: FontWeight.w900,
+                              height: 1.0,
+                              color: Colors.white,
+                              letterSpacing: 2,
+                              shadows: [
+                                Shadow(
+                                  color: const Color(0xFF00ff88).withOpacity(
+                                    0.5 + 0.3 * _glowController.value,
+                                  ),
+                                  blurRadius: 20,
+                                ),
+                              ],
+                            ),
+                            textAlign: isMobile ? TextAlign.center : TextAlign.left,
+                          ),
+                        );
+                      },
+                    ),
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [
+                          const Color(0xFF8338ec),
+                          Colors.white,
+                        ],
+                      ).createShader(bounds),
+                      child: Text(
+                        'DIMULAI SEKARANG',
+                        style: TextStyle(
+                          fontSize: isMobile ? 48 : 72,
+                          fontWeight: FontWeight.w900,
+                          height: 1.0,
+                          color: Colors.white,
+                          letterSpacing: 2,
+                        ),
+                        textAlign: isMobile ? TextAlign.center : TextAlign.left,
                       ),
-                      textAlign: isMobile ? TextAlign.center : TextAlign.left,
                     ),
                   ],
                 ),
               ),
             ),
             
-            const SizedBox(height: 25),
+            const SizedBox(height: 30),
             
-            // Description with better spacing
+            // Epic description
             FadeTransition(
               opacity: _staggeredAnimations[2],
               child: SlideTransition(
@@ -376,15 +549,16 @@ class _HeroSectionState extends State<HeroSection>
                 ).animate(_staggeredAnimations[2]),
                 child: Container(
                   constraints: BoxConstraints(
-                    maxWidth: isMobile ? double.infinity : 500,
+                    maxWidth: isMobile ? double.infinity : 550,
                   ),
                   child: Text(
-                    'Transformasi digital dimulai dari sini. Kami mengembangkan aplikasi mobile dan website premium yang menghadirkan pengalaman luar biasa untuk pengguna Anda.',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontSize: 18,
-                      height: 1.7,
-                      color: AppColors.textSecondary,
-                      letterSpacing: 0.3,
+                    'Kami menciptakan pengalaman digital yang menakjubkan dengan teknologi Flutter terdepan. Aplikasi mobile dan website yang tidak hanya fungsional, tapi juga memukau secara visual.',
+                    style: TextStyle(
+                      fontSize: isMobile ? 16 : 20,
+                      height: 1.8,
+                      color: Colors.white.withOpacity(0.8),
+                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w400,
                     ),
                     textAlign: isMobile ? TextAlign.center : TextAlign.left,
                   ),
@@ -392,9 +566,9 @@ class _HeroSectionState extends State<HeroSection>
               ),
             ),
             
-            const SizedBox(height: 40),
+            const SizedBox(height: 50),
             
-            // Enhanced action buttons
+            // Epic action buttons
             FadeTransition(
               opacity: _staggeredAnimations[2],
               child: SlideTransition(
@@ -402,16 +576,16 @@ class _HeroSectionState extends State<HeroSection>
                   begin: const Offset(0, 0.5),
                   end: Offset.zero,
                 ).animate(_staggeredAnimations[2]),
-                child: _buildActionButtons(isMobile),
+                child: _buildEpicActionButtons(isMobile),
               ),
             ),
             
-            const SizedBox(height: 50),
+            const SizedBox(height: 60),
             
-            // Enhanced stats
+            // Epic stats
             FadeTransition(
               opacity: _staggeredAnimations[2],
-              child: _buildEnhancedStats(isMobile),
+              child: _buildEpicStats(isMobile),
             ),
           ],
         );
@@ -419,88 +593,100 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _buildActionButtons(bool isMobile) {
+  Widget _buildEpicActionButtons(bool isMobile) {
     if (isMobile) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildPrimaryButton(),
-          const SizedBox(height: 16),
-          _buildSecondaryButton(),
+          _buildEpicPrimaryButton(),
+          const SizedBox(height: 20),
+          _buildEpicSecondaryButton(),
         ],
       );
     }
     
     return Row(
       children: [
-        _buildPrimaryButton(),
-        const SizedBox(width: 20),
-        _buildSecondaryButton(),
+        _buildEpicPrimaryButton(),
+        const SizedBox(width: 24),
+        _buildEpicSecondaryButton(),
       ],
     );
   }
 
-  Widget _buildPrimaryButton() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.secondary],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {}, // Navigate to contact
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 18,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.rocket_launch,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Mulai Project Sekarang',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+  Widget _buildEpicPrimaryButton() {
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF00ff88),
+                const Color(0xFF00d4ff),
               ],
             ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00ff88).withOpacity(
+                  0.4 + 0.3 * _glowController.value,
+                ),
+                blurRadius: 25 + 15 * _glowController.value,
+                offset: const Offset(0, 10),
+                spreadRadius: 2,
+              ),
+            ],
           ),
-        ),
-      ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {}, // Navigate to contact
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 20,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.rocket_launch,
+                      color: Color(0xFF0A0A0F),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'MULAI REVOLUSI',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF0A0A0F),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildSecondaryButton() {
+  Widget _buildEpicSecondaryButton() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: const Color(0xFF8338ec),
           width: 2,
         ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: const Color(0xFF8338ec).withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -509,27 +695,29 @@ class _HeroSectionState extends State<HeroSection>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           onTap: () {}, // Navigate to portfolio
           child: Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 18,
+              horizontal: 40,
+              vertical: 20,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.play_circle_outline,
-                  color: AppColors.primary,
-                  size: 20,
+                  color: const Color(0xFF8338ec),
+                  size: 24,
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Lihat Portfolio',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
+                  'LIHAT KARYA',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF8338ec),
+                    letterSpacing: 1,
                   ),
                 ),
               ],
@@ -540,216 +728,751 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _buildEnhancedStats(bool isMobile) {
+  Widget _buildEpicStats(bool isMobile) {
     final stats = [
-      {'number': '50+', 'label': 'Project Sukses', 'icon': Icons.check_circle},
-      {'number': '20+', 'label': 'Client Bahagia', 'icon': Icons.favorite},
-      {'number': '3+', 'label': 'Tahun Experti', 'icon': Icons.star},
+      {'number': '50+', 'label': 'PROJECT EPIC', 'icon': Icons.rocket_launch},
+      {'number': '100%', 'label': 'CLIENT BAHAGIA', 'icon': Icons.favorite},
+      {'number': '24/7', 'label': 'SUPPORT ELITE', 'icon': Icons.support_agent},
     ];
 
     if (isMobile) {
       return Column(
         children: stats.map((stat) => Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          child: _buildStatCard(stat),
+          margin: const EdgeInsets.only(bottom: 24),
+          child: _buildEpicStatCard(stat),
         )).toList(),
       );
     }
 
     return Row(
       children: stats.map((stat) => Expanded(
-        child: _buildStatCard(stat),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          child: _buildEpicStatCard(stat),
+        ),
       )).toList(),
     );
   }
 
-  Widget _buildStatCard(Map<String, dynamic> stat) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withOpacity(0.1),
-                  AppColors.secondary.withOpacity(0.1),
-                ],
+  Widget _buildEpicStatCard(Map<String, dynamic> stat) {
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, child) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(0.05),
+                Colors.white.withOpacity(0.02),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF00ff88).withOpacity(0.3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00ff88).withOpacity(
+                  0.1 + 0.1 * _glowController.value,
+                ),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              stat['icon'],
-              color: AppColors.primary,
-              size: 24,
-            ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            stat['number'],
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w900,
-            ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF00ff88).withOpacity(0.2),
+                      Colors.transparent,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  stat['icon'],
+                  color: const Color(0xFF00ff88),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    const Color(0xFF00ff88),
+                    const Color(0xFF00d4ff),
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  stat['number'],
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                stat['label'],
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withOpacity(0.7),
+                  letterSpacing: 1,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            stat['label'],
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeroVisual() {
+  Widget _buildEpicHeroVisual() {
     return AnimatedBuilder(
-      animation: _floatingController,
+      animation: Listenable.merge([_glowController, _rotationController]),
       builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, 10 * _floatingController.value),
-          child: Container(
-            height: 400,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary.withOpacity(0.1),
-                  AppColors.secondary.withOpacity(0.2),
-                  AppColors.accent.withOpacity(0.1),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.1),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Glassmorphism effect
-                Container(
+        return Container(
+          height: 500,
+          child: Stack(
+            children: [
+              // Main holographic container
+              Center(
+                // child: Transform.rotateY(_rotationController.value * 0.1),
+                child: Container(
+                  width: 300,
+                  height: 400,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                    ),
-                  ),
-                ),
-                
-                // Central device mockup
-                Center(
-                  child: Container(
-                    width: 160,
-                    height: 280,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF00ff88).withOpacity(0.1),
+                        const Color(0xFF00d4ff).withOpacity(0.2),
+                        const Color(0xFF8338ec).withOpacity(0.1),
                       ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(25),
-                      child: Stack(
-                        children: [
-                          // Screen gradient
-                          Container(
-                            margin: const EdgeInsets.all(8),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: const Color(0xFF00ff88).withOpacity(0.6),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00ff88).withOpacity(
+                          0.3 + 0.2 * _glowController.value,
+                        ),
+                        blurRadius: 30,
+                        offset: const Offset(0, 15),
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      // Holographic grid
+                      CustomPaint(
+                        size: Size.infinite,
+                        painter: HolographicGridPainter(
+                          animation: _rotationController.value,
+                        ),
+                      ),
+                      
+                      // Central device
+                      Center(
+                        child: Transform.scale(
+                          scale: 1.0 + 0.05 * _glowController.value,
+                          child: Container(
+                            width: 180,
+                            height: 320,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  AppColors.primary,
-                                  AppColors.secondary,
-                                  AppColors.accent,
+                                  Colors.black,
+                                  const Color(0xFF1a1a2e),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          
-                          // App elements
-                          Positioned(
-                            top: 30,
-                            left: 20,
-                            right: 20,
-                            child: Column(
-                              children: [
-                                Container(
-                                  height: 4,
-                                  margin: const EdgeInsets.symmetric(horizontal: 40),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: const Color(0xFF00ff88),
+                                width: 3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00ff88).withOpacity(0.5),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
                                 ),
-                                const SizedBox(height: 20),
-                                ...List.generate(4, (index) => Container(
-                                  height: 20,
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                )),
                               ],
                             ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(27),
+                              child: Stack(
+                                children: [
+                                  // Screen content
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          const Color(0xFF00ff88),
+                                          const Color(0xFF00d4ff),
+                                          const Color(0xFF8338ec),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                  
+                                  // App interface elements
+                                  Positioned(
+                                    top: 40,
+                                    left: 30,
+                                    right: 30,
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          height: 6,
+                                          margin: const EdgeInsets.symmetric(horizontal: 50),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(3),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 30),
+                                        ...List.generate(5, (index) => Container(
+                                          height: 24,
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.3),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                        )),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ],
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Floating tech icons
+              ..._buildFloatingTechIcons(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildFloatingTechIcons() {
+    final icons = [
+      {'icon': Icons.flutter_dash, 'color': const Color(0xFF00ff88), 'position': const Offset(50, 100)},
+      {'icon': Icons.web, 'color': const Color(0xFF00d4ff), 'position': const Offset(320, 150)},
+      {'icon': Icons.phone_android, 'color': const Color(0xFFff006e), 'position': const Offset(80, 350)},
+      {'icon': Icons.code, 'color': const Color(0xFF8338ec), 'position': const Offset(300, 380)},
+      {'icon': Icons.api, 'color': const Color(0xFF00ff88), 'position': const Offset(40, 250)},
+    ];
+
+    return icons.map((iconData) {
+      return Positioned(
+        left: (iconData['position'] as Offset?)?.dx ?? 0.0,
+        top: (iconData['position'] as Offset?)?.dy ?? 0.0,
+        child: Transform.translate(
+          offset: Offset(
+            10 * _glowController.value,
+            5 * _glowController.value,
+          ),
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  (iconData['color'] as Color).withOpacity(0.3),
+                  Colors.transparent,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: iconData['color'] as Color,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (iconData['color'] as Color).withOpacity(0.6),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Icon(
+              iconData['icon'] as IconData,
+              color: iconData['color'] as Color,
+              size: 28,
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+}
+
+// Epic Services Overview
+class EpicServicesOverview extends StatefulWidget {
+  const EpicServicesOverview({Key? key}) : super(key: key);
+
+  @override
+  State<EpicServicesOverview> createState() => _EpicServicesOverviewState();
+}
+
+class _EpicServicesOverviewState extends State<EpicServicesOverview>
+    with TickerProviderStateMixin {
+  late AnimationController _animationController;
+  late AnimationController _glowController;
+  late List<Animation<double>> _cardAnimations;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+
+    _cardAnimations = List.generate(3, (index) {
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _animationController,
+          curve: Interval(
+            index * 0.3,
+            0.7 + (index * 0.1),
+            curve: Curves.elasticOut,
+          ),
+        ),
+      );
+    });
+
+    _animationController.forward();
+    _glowController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 60,
+        vertical: 100,
+      ),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: Column(
+            children: [
+              _buildEpicSectionHeader(),
+              const SizedBox(height: 80),
+              _buildEpicServicesGrid(isMobile),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEpicSectionHeader() {
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, child) {
+        return Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF8338ec).withOpacity(0.2),
+                    const Color(0xFFff006e).withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: const Color(0xFF8338ec).withOpacity(0.6),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8338ec).withOpacity(
+                      0.3 + 0.2 * _glowController.value,
+                    ),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    const Color(0xFF8338ec),
+                    const Color(0xFFff006e),
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  '⚡ LAYANAN ELITE',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [
+                  Colors.white,
+                  const Color(0xFF00d4ff),
+                  const Color(0xFF8338ec),
+                ],
+              ).createShader(bounds),
+              child: Text(
+                'TEKNOLOGI MASA DEPAN',
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width < 768 ? 32 : 48,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                  shadows: [
+                    Shadow(
+                      color: const Color(0xFF00d4ff).withOpacity(
+                        0.5 + 0.3 * _glowController.value,
+                      ),
+                      blurRadius: 20,
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: Text(
+                'Pengalaman digital yang revolusioner dengan teknologi terdepan. Kami menciptakan aplikasi yang tidak hanya berfungsi, tetapi mengubah cara bisnis Anda berinteraksi dengan dunia.',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.white.withOpacity(0.8),
+                  height: 1.7,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEpicServicesGrid(bool isMobile) {
+    final services = [
+      EpicService(
+        icon: Icons.phone_android,
+        title: 'MOBILE REVOLUTION',
+        description: 'Aplikasi mobile yang menghadirkan pengalaman pengguna luar biasa dengan teknologi Flutter terdepan',
+        features: ['Neural Performance', 'Quantum UI/UX', 'Holographic Design'],
+        primaryColor: const Color(0xFF00ff88),
+        secondaryColor: const Color(0xFF00d4ff),
+      ),
+      EpicService(
+        icon: Icons.web,
+        title: 'WEB DOMINATION',
+        description: 'Website futuristik yang memukau dengan kecepatan lightning dan design yang menghipnotis',
+        features: ['Cyber Speed', 'Matrix Integration', 'Neural Networks'],
+        primaryColor: const Color(0xFF00d4ff),
+        secondaryColor: const Color(0xFF8338ec),
+      ),
+      EpicService(
+        icon: Icons.rocket_launch,
+        title: 'INSTANT DEPLOY',
+        description: 'Solusi instant deployment dengan kustomisasi penuh untuk dominasi pasar digital',
+        features: ['Zero Latency', 'Infinite Scale', 'Quantum Ready'],
+        primaryColor: const Color(0xFF8338ec),
+        secondaryColor: const Color(0xFFff006e),
+      ),
+    ];
+
+    if (isMobile) {
+      return Column(
+        children: services.asMap().entries.map((entry) {
+          return AnimatedBuilder(
+            animation: _cardAnimations[entry.key],
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, 100 * (1 - _cardAnimations[entry.key].value)),
+                child: Opacity(
+                  opacity: _cardAnimations[entry.key].value,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 32),
+                    child: _buildEpicServiceCard(entry.value),
+                  ),
+                ),
+              );
+            },
+          );
+        }).toList(),
+      );
+    }
+
+    return Row(
+      children: services.asMap().entries.map((entry) {
+        return Expanded(
+          child: AnimatedBuilder(
+            animation: _cardAnimations[entry.key],
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, 100 * (1 - _cardAnimations[entry.key].value)),
+                child: Opacity(
+                  opacity: _cardAnimations[entry.key].value,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildEpicServiceCard(entry.value),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildEpicServiceCard(EpicService service) {
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, child) {
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  service.primaryColor.withOpacity(0.1),
+                  service.secondaryColor.withOpacity(0.05),
+                  Colors.transparent,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(
+                color: service.primaryColor.withOpacity(0.5),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: service.primaryColor.withOpacity(
+                    0.2 + 0.1 * _glowController.value,
+                  ),
+                  blurRadius: 25,
+                  offset: const Offset(0, 15),
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Epic icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [
+                        service.primaryColor.withOpacity(0.3),
+                        service.secondaryColor.withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: service.primaryColor,
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: service.primaryColor.withOpacity(0.6),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    service.icon,
+                    size: 40,
+                    color: service.primaryColor,
+                  ),
+                ),
+                
+                const SizedBox(height: 30),
+                
+                // Epic title
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [
+                      service.primaryColor,
+                      service.secondaryColor,
+                    ],
+                  ).createShader(bounds),
+                  child: Text(
+                    service.title,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
                 
-                // Floating elements
-                _buildFloatingIcon(
-                  Icons.flutter_dash,
-                  const Offset(50, 80),
-                  AppColors.primary,
+                const SizedBox(height: 16),
+                
+                // Description
+                Text(
+                  service.description,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.8),
+                    height: 1.6,
+                  ),
                 ),
-                _buildFloatingIcon(
-                  Icons.web,
-                  const Offset(300, 120),
-                  AppColors.secondary,
-                ),
-                _buildFloatingIcon(
-                  Icons.phone_android,
-                  const Offset(80, 280),
-                  AppColors.accent,
-                ),
-                _buildFloatingIcon(
-                  Icons.code,
-                  const Offset(280, 300),
-                  AppColors.success,
+                
+                const SizedBox(height: 24),
+                
+                // Features
+                ...service.features.map((feature) => Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [service.primaryColor, service.secondaryColor],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: service.primaryColor.withOpacity(0.6),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          feature,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+                
+                const SizedBox(height: 30),
+                
+                // CTA Button
+                Container(
+                  width: double.infinity,
+                  height: 55,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        service.primaryColor.withOpacity(0.2),
+                        service.secondaryColor.withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: service.primaryColor.withOpacity(0.6),
+                      width: 2,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(15),
+                      onTap: () {},
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'EXPLORE NOW',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: service.primaryColor,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.arrow_forward,
+                              size: 18,
+                              color: service.primaryColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -758,79 +1481,172 @@ class _HeroSectionState extends State<HeroSection>
       },
     );
   }
+}
 
-  Widget _buildFloatingIcon(IconData icon, Offset position, Color color) {
-    return Positioned(
-      left: position.dx,
-      top: position.dy,
-      child: AnimatedBuilder(
-        animation: _floatingController,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(
-              5 * _floatingController.value,
-              3 * _floatingController.value,
-            ),
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: color.withOpacity(0.3),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
-            ),
-          );
-        },
+// Epic floating WhatsApp button (placeholder)
+class EpicFloatingWhatsAppButton extends StatelessWidget {
+  const EpicFloatingWhatsAppButton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF00ff88),
+            const Color(0xFF00d4ff),
+          ],
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00ff88).withOpacity(0.6),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Icon(
+        Icons.chat,
+        color: const Color(0xFF0A0A0F),
+        size: 32,
       ),
     );
   }
+}
 
-  Widget _buildFloatingParticle(int index) {
-    final random = [0.3, 0.7, 0.2, 0.8, 0.5, 0.9][index];
-    final size = [6.0, 8.0, 4.0, 10.0, 5.0, 7.0][index];
+// Data Models
+class EpicService {
+  final IconData icon;
+  final String title;
+  final String description;
+  final List<String> features;
+  final Color primaryColor;
+  final Color secondaryColor;
+
+  EpicService({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.features,
+    required this.primaryColor,
+    required this.secondaryColor,
+  });
+}
+
+// Custom Painters
+class GridPainter extends CustomPainter {
+  final double animation;
+  final Color color;
+
+  GridPainter({required this.animation, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    final spacing = 50.0;
+    final offsetX = (animation * spacing) % spacing;
+    final offsetY = (animation * spacing) % spacing;
+
+    // Draw vertical lines
+    for (double x = offsetX; x < size.width; x += spacing) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        paint,
+      );
+    }
+
+    // Draw horizontal lines
+    for (double y = offsetY; y < size.height; y += spacing) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class ScanLinesPainter extends CustomPainter {
+  final double animation;
+
+  ScanLinesPainter({required this.animation});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF00ff88).withOpacity(0.1)
+      ..strokeWidth = 2;
+
+    final y = (animation * size.height * 2) % size.height;
     
-    return Positioned(
-      left: MediaQuery.of(context).size.width * random,
-      top: 100 + (index * 80.0),
-      child: AnimatedBuilder(
-        animation: _floatingController,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(
-              20 * _floatingController.value * (index.isEven ? 1 : -1),
-              10 * _floatingController.value,
-            ),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: [
-                  AppColors.primary,
-                  AppColors.secondary,
-                  AppColors.accent,
-                  AppColors.success,
-                ][index % 4].withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
-            ),
-          );
-        },
-      ),
+    canvas.drawLine(
+      Offset(0, y),
+      Offset(size.width, y),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class HolographicGridPainter extends CustomPainter {
+  final double animation;
+
+  HolographicGridPainter({required this.animation});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF00ff88).withOpacity(0.3)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    final spacing = 20.0;
+    final offset = animation * spacing;
+
+    // Draw animated grid
+    for (double x = -offset; x < size.width + spacing; x += spacing) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        paint,
+      );
+    }
+
+    for (double y = -offset; y < size.height + spacing; y += spacing) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+// Extension for 3D transforms
+extension Transform3D on Transform {
+  static Widget rotateY(double angle, {required Widget child}) {
+    return Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()
+        ..setEntry(3, 2, 0.001)
+        ..rotateY(angle),
+      child: child,
     );
   }
 }

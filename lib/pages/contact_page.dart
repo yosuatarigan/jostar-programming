@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../core/app_theme.dart';
 import '../widgets/common/custom_button.dart';
 import '../widgets/common/responsive_builder.dart';
+import '../widgets/layout/footer_section.dart';
 
 class ContactPage extends StatefulWidget {
   const ContactPage({Key? key}) : super(key: key);
@@ -72,6 +73,7 @@ class _ContactPageState extends State<ContactPage> {
           _buildContactSection(context),
           _buildLocationSection(context),
           _buildFAQSection(context),
+          const FooterSection(), // Footer di bawah semua content
         ],
       ),
     );

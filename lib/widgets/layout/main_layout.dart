@@ -26,7 +26,6 @@ class _MainLayoutState extends State<MainLayout> {
         children: [
           _buildHeader(),
           Expanded(child: widget.child),
-          _buildFooter(),
         ],
       ),
     );
@@ -288,129 +287,6 @@ class _MainLayoutState extends State<MainLayout> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Container(
-      color: AppColors.textPrimary,
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: ResponsiveBuilder(
-        mobile: _buildMobileFooter(),
-        desktop: _buildDesktopFooter(),
-      ),
-    );
-  }
-
-  Widget _buildDesktopFooter() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: _buildFooterSection(
-                  'Jostar Programming',
-                  [
-                    'Solusi Mobile App & Website untuk bisnis Indonesia',
-                    'Mengembangkan aplikasi berkualitas tinggi dengan teknologi terdepan',
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _buildFooterSection(
-                  'Services',
-                  ['Custom Development', 'Ready Apps', 'Source Code', 'Consultation'],
-                ),
-              ),
-              Expanded(
-                child: _buildFooterSection(
-                  'Contact',
-                  ['yosua@jostar.dev', '+62 xxx-xxxx-xxxx', 'WhatsApp Available'],
-                ),
-              ),
-              Expanded(
-                child: _buildFooterSection(
-                  'Follow Us',
-                  ['Instagram', 'LinkedIn', 'GitHub', 'YouTube'],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Divider(color: AppColors.neutral.withOpacity(0.3)),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '© 2024 Jostar Programming. All rights reserved.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textLight.withOpacity(0.7),
-                ),
-              ),
-              Text(
-                'Made with ❤️ in Indonesia',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textLight.withOpacity(0.7),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileFooter() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          _buildFooterSection(
-            'Jostar Programming',
-            ['Solusi Mobile App & Website untuk bisnis Indonesia'],
-          ),
-          const SizedBox(height: 24),
-          const Divider(color: AppColors.neutral),
-          const SizedBox(height: 16),
-          Text(
-            '© 2024 Jostar Programming. Made with ❤️ in Indonesia',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textLight.withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooterSection(String title, List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppColors.textLight,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...items.map((item) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            item,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textLight.withOpacity(0.8),
-            ),
-          ),
-        )),
-      ],
     );
   }
 }

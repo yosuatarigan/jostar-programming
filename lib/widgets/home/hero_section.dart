@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/app_theme.dart';
+import '../common/custom_button.dart';
+import '../common/responsive_builder.dart';
 
-// Modern Hero Section with epic design
 class HeroSection extends StatefulWidget {
   const HeroSection({Key? key}) : super(key: key);
 
@@ -12,499 +13,612 @@ class HeroSection extends StatefulWidget {
 
 class _HeroSectionState extends State<HeroSection>
     with TickerProviderStateMixin {
-  late AnimationController _animationController;
+  late AnimationController _mainController;
   late AnimationController _floatingController;
-  late List<Animation<double>> _staggeredAnimations;
+  late AnimationController _typingController;
+  
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _floatingAnimation;
+
+  String _displayText = '';
+  final List<String> _typingTexts = [
+    'Mobile App Development',
+    'Website Development', 
+    'Digital Solutions',
+    'Flutter Expert',
+  ];
+  int _currentTextIndex = 0;
+  int _currentCharIndex = 0;
+  bool _isDeleting = false;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _setupAnimations();
+    _startTypingAnimation();
+  }
+
+  void _setupAnimations() {
+    _mainController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _floatingController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     );
 
-    // Staggered animations for different elements
-    _staggeredAnimations = [
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-        ),
-      ),
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: const Interval(0.2, 0.6, curve: Curves.easeOut),
-        ),
-      ),
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: const Interval(0.4, 0.8, curve: Curves.easeOut),
-        ),
-      ),
-    ];
+    _typingController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
 
-    _animationController.forward();
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _mainController,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _mainController,
+      curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _mainController,
+      curve: const Interval(0.4, 1.0, curve: Curves.elasticOut),
+    ));
+
+    _floatingAnimation = Tween<double>(
+      begin: -10,
+      end: 10,
+    ).animate(CurvedAnimation(
+      parent: _floatingController,
+      curve: Curves.easeInOut,
+    ));
+
+    _mainController.forward();
     _floatingController.repeat(reverse: true);
+  }
+
+  void _startTypingAnimation() {
+    Future.delayed(const Duration(milliseconds: 2000), _typeText);
+  }
+
+  void _typeText() {
+    if (!mounted) return;
+
+    final currentText = _typingTexts[_currentTextIndex];
+    
+    if (!_isDeleting && _currentCharIndex < currentText.length) {
+      setState(() {
+        _displayText = currentText.substring(0, _currentCharIndex + 1);
+        _currentCharIndex++;
+      });
+      Future.delayed(const Duration(milliseconds: 100), _typeText);
+    } else if (!_isDeleting && _currentCharIndex == currentText.length) {
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        setState(() {
+          _isDeleting = true;
+        });
+        _typeText();
+      });
+    } else if (_isDeleting && _currentCharIndex > 0) {
+      setState(() {
+        _displayText = currentText.substring(0, _currentCharIndex - 1);
+        _currentCharIndex--;
+      });
+      Future.delayed(const Duration(milliseconds: 50), _typeText);
+    } else if (_isDeleting && _currentCharIndex == 0) {
+      setState(() {
+        _isDeleting = false;
+        _currentTextIndex = (_currentTextIndex + 1) % _typingTexts.length;
+      });
+      Future.delayed(const Duration(milliseconds: 500), _typeText);
+    }
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _mainController.dispose();
     _floatingController.dispose();
+    _typingController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
-    
     return Container(
       width: double.infinity,
-      constraints: BoxConstraints(
-        minHeight: isMobile ? 600 : 700,
-      ),
+      height: ScreenSize.isMobile(context) ? 700 : 800,
       child: Stack(
         children: [
-          // Animated background particles
-          ...List.generate(6, (index) => _buildFloatingParticle(index)),
-          
-          // Main content
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 20 : 60,
-              vertical: 60,
-            ),
-            child: Center(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: isMobile 
-                    ? _buildMobileLayout() 
-                    : _buildDesktopLayout(),
-              ),
-            ),
-          ),
+          _buildBackgroundImage(),
+          _buildGradientOverlay(),
+          _buildContent(),
+          _buildFloatingElements(),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopLayout() {
+  Widget _buildBackgroundImage() {
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: NetworkImage(
+              'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80'
+            ),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              AppColors.primary.withOpacity(0.7),
+              BlendMode.multiply,
+            ),
+          ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withOpacity(0.8),
+                AppColors.secondary.withOpacity(0.6),
+                AppColors.accent.withOpacity(0.7),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGradientOverlay() {
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.black.withOpacity(0.3),
+              Colors.transparent,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Positioned.fill(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 600),
+        padding: EdgeInsets.symmetric(
+          horizontal: ScreenSize.getResponsivePadding(context),
+          vertical: 80,
+        ),
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: ScreenSize.getMaxContentWidth(context),
+            ),
+            child: ResponsiveBuilder(
+              mobile: _buildMobileContent(),
+              desktop: _buildDesktopContent(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent() {
     return Row(
       children: [
         Expanded(
           flex: 6,
-          child: _buildHeroContent(),
+          child: _buildHeroText(),
         ),
         const SizedBox(width: 80),
         Expanded(
-          flex: 5,
+          flex: 4,
           child: _buildHeroVisual(),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileContent() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildHeroContent(),
-        const SizedBox(height: 50),
+        _buildHeroText(),
+        const SizedBox(height: 40),
         _buildHeroVisual(),
       ],
     );
   }
 
-  Widget _buildHeroContent() {
-    final isMobile = MediaQuery.of(context).size.width < 768;
-    
+  Widget _buildHeroText() {
     return AnimatedBuilder(
-      animation: _animationController,
+      animation: _mainController,
       builder: (context, child) {
-        return Column(
-          crossAxisAlignment: isMobile 
-              ? CrossAxisAlignment.center 
-              : CrossAxisAlignment.start,
-          children: [
-            // Animated badge
-            FadeTransition(
-              opacity: _staggeredAnimations[0],
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, -0.5),
-                  end: Offset.zero,
-                ).animate(_staggeredAnimations[0]),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20, 
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.accent.withOpacity(0.2),
-                        AppColors.primary.withOpacity(0.1),
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Column(
+              crossAxisAlignment: ScreenSize.isMobile(context)
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
+              children: [
+                // Animated Badge
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.textLight.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: AppColors.textLight.withOpacity(0.3),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: AppColors.accent.withOpacity(0.3),
-                      width: 1.5,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '🚀 Professional Flutter Developer',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textLight,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accent.withOpacity(0.2),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '🚀 Flutter Developer Professional',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-              ),
-            ),
-            
-            const SizedBox(height: 30),
-            
-            // Main headline with enhanced typography
-            FadeTransition(
-              opacity: _staggeredAnimations[1],
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.3),
-                  end: Offset.zero,
-                ).animate(_staggeredAnimations[1]),
-                child: Column(
-                  crossAxisAlignment: isMobile 
-                      ? CrossAxisAlignment.center 
-                      : CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Wujudkan',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: isMobile ? 40 : 64,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: isMobile ? TextAlign.center : TextAlign.left,
-                    ),
-                    ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        colors: [
-                          AppColors.primary,
-                          AppColors.secondary,
-                          AppColors.accent,
-                        ],
-                      ).createShader(bounds),
-                      child: Text(
-                        'Aplikasi Impian',
-                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          fontSize: isMobile ? 40 : 64,
-                          fontWeight: FontWeight.w900,
-                          height: 1.1,
-                          color: Colors.white,
-                        ),
-                        textAlign: isMobile ? TextAlign.center : TextAlign.left,
-                      ),
-                    ),
-                    Text(
-                      'Anda Bersama Kami',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: isMobile ? 40 : 64,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: isMobile ? TextAlign.center : TextAlign.left,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 25),
-            
-            // Description with better spacing
-            FadeTransition(
-              opacity: _staggeredAnimations[2],
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.3),
-                  end: Offset.zero,
-                ).animate(_staggeredAnimations[2]),
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: isMobile ? double.infinity : 500,
+
+                // Main Heading
+                Text(
+                  'Wujudkan Bisnis Digital Anda Bersama',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontSize: ScreenSize.isMobile(context) ? 36 : 56,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textLight,
+                    height: 1.1,
                   ),
+                  textAlign: ScreenSize.isMobile(context) 
+                      ? TextAlign.center 
+                      : TextAlign.left,
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Company Name with Gradient
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      AppColors.accent,
+                      Colors.white,
+                      AppColors.secondary,
+                    ],
+                  ).createShader(bounds),
                   child: Text(
-                    'Transformasi digital dimulai dari sini. Kami mengembangkan aplikasi mobile dan website premium yang menghadirkan pengalaman luar biasa untuk pengguna Anda.',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontSize: 18,
-                      height: 1.7,
-                      color: AppColors.textSecondary,
-                      letterSpacing: 0.3,
+                    'Jostar Programming',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontSize: ScreenSize.isMobile(context) ? 36 : 56,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.1,
                     ),
-                    textAlign: isMobile ? TextAlign.center : TextAlign.left,
+                    textAlign: ScreenSize.isMobile(context) 
+                        ? TextAlign.center 
+                        : TextAlign.left,
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 24),
+
+                // Typing Animation
+                Container(
+                  height: 60,
+                  alignment: ScreenSize.isMobile(context) 
+                      ? Alignment.center 
+                      : Alignment.centerLeft,
+                  child: RichText(
+                    textAlign: ScreenSize.isMobile(context) 
+                        ? TextAlign.center 
+                        : TextAlign.left,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Specializing in ',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppColors.textLight.withOpacity(0.9),
+                            fontSize: ScreenSize.isMobile(context) ? 20 : 24,
+                          ),
+                        ),
+                        TextSpan(
+                          text: _displayText,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppColors.accent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: ScreenSize.isMobile(context) ? 20 : 24,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '|',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppColors.accent,
+                            fontSize: ScreenSize.isMobile(context) ? 20 : 24,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Description
+                Text(
+                  'Kami mengembangkan aplikasi mobile dan website berkualitas tinggi '
+                  'untuk bisnis Indonesia. Dari konsep hingga deployment, kami siap '
+                  'mewujudkan visi digital Anda dengan teknologi terdepan.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontSize: ScreenSize.isMobile(context) ? 16 : 18,
+                    color: AppColors.textLight.withOpacity(0.9),
+                    height: 1.6,
+                  ),
+                  textAlign: ScreenSize.isMobile(context) 
+                      ? TextAlign.center 
+                      : TextAlign.left,
+                ),
+
+                const SizedBox(height: 40),
+
+                // Action Buttons
+                _buildActionButtons(),
+
+                const SizedBox(height: 40),
+
+                // Stats
+                _buildStatsRow(),
+              ],
             ),
-            
-            const SizedBox(height: 40),
-            
-            // Enhanced action buttons
-            FadeTransition(
-              opacity: _staggeredAnimations[2],
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.5),
-                  end: Offset.zero,
-                ).animate(_staggeredAnimations[2]),
-                child: _buildActionButtons(isMobile),
-              ),
-            ),
-            
-            const SizedBox(height: 50),
-            
-            // Enhanced stats
-            FadeTransition(
-              opacity: _staggeredAnimations[2],
-              child: _buildEnhancedStats(isMobile),
-            ),
-          ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildActionButtons(bool isMobile) {
-    if (isMobile) {
-      return Column(
+  Widget _buildActionButtons() {
+    return ResponsiveBuilder(
+      mobile: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildPrimaryButton(),
+          Container(
+            height: 56,
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/contact'),
+              icon: const Icon(
+                Icons.rocket_launch_rounded,
+                color: AppColors.textPrimary,
+                size: 20,
+              ),
+              label: Text(
+                'Mulai Konsultasi Gratis',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.textLight,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 8,
+                shadowColor: Colors.black.withOpacity(0.3),
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
-          _buildSecondaryButton(),
-        ],
-      );
-    }
-    
-    return Row(
-      children: [
-        _buildPrimaryButton(),
-        const SizedBox(width: 20),
-        _buildSecondaryButton(),
-      ],
-    );
-  }
-
-  Widget _buildPrimaryButton() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.secondary],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => context.go('/contact'),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 18,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.rocket_launch,
-                  color: Colors.white,
-                  size: 20,
+          Container(
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: () => context.go('/portfolio'),
+              icon: const Icon(
+                Icons.folder_open_rounded,
+                color: AppColors.textLight,
+                size: 20,
+              ),
+              label: Text(
+                'Lihat Portfolio',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textLight,
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Mulai Project Sekarang',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: AppColors.textLight.withOpacity(0.8),
+                  width: 2,
                 ),
-              ],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSecondaryButton() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => context.go('/portfolio'),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 18,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.play_circle_outline,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Lihat Portfolio',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEnhancedStats(bool isMobile) {
-    final stats = [
-      {'number': '50+', 'label': 'Project Sukses', 'icon': Icons.check_circle},
-      {'number': '20+', 'label': 'Client Bahagia', 'icon': Icons.favorite},
-      {'number': '3+', 'label': 'Tahun Experti', 'icon': Icons.star},
-    ];
-
-    if (isMobile) {
-      return Column(
-        children: stats.map((stat) => Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          child: _buildStatCard(stat),
-        )).toList(),
-      );
-    }
-
-    return Row(
-      children: stats.map((stat) => Expanded(
-        child: _buildStatCard(stat),
-      )).toList(),
-    );
-  }
-
-  Widget _buildStatCard(Map<String, dynamic> stat) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
+      desktop: Row(
+        mainAxisAlignment: ScreenSize.isMobile(context) 
+            ? MainAxisAlignment.center 
+            : MainAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withOpacity(0.1),
-                  AppColors.secondary.withOpacity(0.1),
-                ],
+            height: 56,
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/contact'),
+              icon: const Icon(
+                Icons.rocket_launch_rounded,
+                color: AppColors.textPrimary,
+                size: 20,
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              stat['icon'],
-              color: AppColors.primary,
-              size: 24,
+              label: Text(
+                'Mulai Konsultasi Gratis',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.textLight,
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 8,
+                shadowColor: Colors.black.withOpacity(0.3),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            stat['number'],
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w900,
+          const SizedBox(width: 20),
+          Container(
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: () => context.go('/portfolio'),
+              icon: const Icon(
+                Icons.folder_open_rounded,
+                color: AppColors.textLight,
+                size: 20,
+              ),
+              label: Text(
+                'Lihat Portfolio',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textLight,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: AppColors.textLight.withOpacity(0.8),
+                  width: 2,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            stat['label'],
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatsRow() {
+    final stats = [
+      ('50+', 'Project Selesai'),
+      ('20+', 'Client Puas'),
+      ('3+', 'Tahun Pengalaman'),
+    ];
+
+    return ResponsiveBuilder(
+      mobile: Column(
+        children: stats.asMap().entries.map((entry) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: _buildStatItem(entry.value.$1, entry.value.$2, entry.key),
+          );
+        }).toList(),
+      ),
+      desktop: Row(
+        mainAxisAlignment: ScreenSize.isMobile(context) 
+            ? MainAxisAlignment.center 
+            : MainAxisAlignment.start,
+        children: stats.asMap().entries.map((entry) {
+          return Expanded(
+            child: _buildStatItem(entry.value.$1, entry.value.$2, entry.key),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String number, String label, int index) {
+    return AnimatedBuilder(
+      animation: _mainController,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(
+              parent: _mainController,
+              curve: Interval(0.6 + (index * 0.1), 1.0, curve: Curves.easeOut),
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: ScreenSize.isMobile(context) 
+                  ? CrossAxisAlignment.center 
+                  : CrossAxisAlignment.start,
+              children: [
+                Text(
+                  number,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: ScreenSize.isMobile(context) ? 28 : 36,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textLight.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -513,132 +627,113 @@ class _HeroSectionState extends State<HeroSection>
       animation: _floatingController,
       builder: (context, child) {
         return Transform.translate(
-          offset: Offset(0, 10 * _floatingController.value),
-          child: Container(
-            height: 400,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary.withOpacity(0.1),
-                  AppColors.secondary.withOpacity(0.2),
-                  AppColors.accent.withOpacity(0.1),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.1),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Glassmorphism effect
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                    ),
-                  ),
-                ),
-                
-                // Central device mockup
-                Center(
-                  child: Container(
-                    width: 160,
-                    height: 280,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(25),
-                      child: Stack(
-                        children: [
-                          // Screen gradient
-                          Container(
-                            margin: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.secondary,
-                                  AppColors.accent,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          
-                          // App elements
-                          Positioned(
-                            top: 30,
-                            left: 20,
-                            right: 20,
-                            child: Column(
-                              children: [
-                                Container(
-                                  height: 4,
-                                  margin: const EdgeInsets.symmetric(horizontal: 40),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                ...List.generate(4, (index) => Container(
-                                  height: 20,
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                )),
-                              ],
-                            ),
+          offset: Offset(0, _floatingAnimation.value),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Container(
+              height: ScreenSize.isMobile(context) ? 300 : 400,
+              child: Stack(
+                children: [
+                  // Main Device Mockup
+                  Center(
+                    child: Container(
+                      width: 200,
+                      height: 320,
+                      decoration: BoxDecoration(
+                        color: AppColors.textLight,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Stack(
+                          children: [
+                            // Screen Content
+                            Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.secondary,
+                                  ],
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.flutter_dash,
+                                    size: 60,
+                                    color: AppColors.textLight,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Flutter App',
+                                    style: TextStyle(
+                                      color: AppColors.textLight,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Notch
+                            Positioned(
+                              top: 0,
+                              left: 60,
+                              right: 60,
+                              child: Container(
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: AppColors.neutral,
+                                  borderRadius: BorderRadius.only(
+                                    bottomLeft: Radius.circular(12),
+                                    bottomRight: Radius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                
-                // Floating elements
-                _buildFloatingIcon(
-                  Icons.flutter_dash,
-                  const Offset(50, 80),
-                  AppColors.primary,
-                ),
-                _buildFloatingIcon(
-                  Icons.web,
-                  const Offset(300, 120),
-                  AppColors.secondary,
-                ),
-                _buildFloatingIcon(
-                  Icons.phone_android,
-                  const Offset(80, 280),
-                  AppColors.accent,
-                ),
-                _buildFloatingIcon(
-                  Icons.code,
-                  const Offset(280, 300),
-                  AppColors.success,
-                ),
-              ],
+                  
+                  // Floating Code Blocks
+                  _buildFloatingCodeBlock(
+                    top: 40,
+                    right: 20,
+                    'Flutter',
+                    AppColors.primary,
+                    0.5,
+                  ),
+                  _buildFloatingCodeBlock(
+                    bottom: 80,
+                    left: 10,
+                    'Firebase',
+                    AppColors.accent,
+                    0.8,
+                  ),
+                  _buildFloatingCodeBlock(
+                    top: 160,
+                    left: 0,
+                    'Dart',
+                    AppColors.secondary,
+                    0.3,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -646,39 +741,50 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _buildFloatingIcon(IconData icon, Offset position, Color color) {
+  Widget _buildFloatingCodeBlock(
+    String text,
+    Color color,
+    double delay, {
+    double? top,
+    double? bottom,
+    double? left,
+    double? right,
+  }) {
     return Positioned(
-      left: position.dx,
-      top: position.dy,
+      top: top,
+      bottom: bottom,
+      left: left,
+      right: right,
       child: AnimatedBuilder(
-        animation: _floatingController,
+        animation: _mainController,
         builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(
-              5 * _floatingController.value,
-              3 * _floatingController.value,
+          return FadeTransition(
+            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(
+                parent: _mainController,
+                curve: Interval(delay, 1.0, curve: Curves.easeOut),
+              ),
             ),
             child: Container(
-              width: 50,
-              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: color.withOpacity(0.3),
-                ),
+                color: color.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textLight,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
             ),
           );
@@ -687,36 +793,49 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _buildFloatingParticle(int index) {
-    final random = [0.3, 0.7, 0.2, 0.8, 0.5, 0.9][index];
-    final size = [6.0, 8.0, 4.0, 10.0, 5.0, 7.0][index];
-    
-    return Positioned(
-      left: MediaQuery.of(context).size.width * random,
-      top: 100 + (index * 80.0),
-      child: AnimatedBuilder(
-        animation: _floatingController,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(
-              20 * _floatingController.value * (index.isEven ? 1 : -1),
-              10 * _floatingController.value,
+  Widget _buildFloatingElements() {
+    return AnimatedBuilder(
+      animation: _floatingController,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            // Floating Icons
+            Positioned(
+              top: 100 + _floatingAnimation.value * 0.5,
+              left: 50,
+              child: _buildFloatingIcon(Icons.code_rounded, AppColors.accent, 1.0),
             ),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: [
-                  AppColors.primary,
-                  AppColors.secondary,
-                  AppColors.accent,
-                  AppColors.success,
-                ][index % 4].withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
+            Positioned(
+              top: 300 + _floatingAnimation.value * 0.8,
+              right: 80,
+              child: _buildFloatingIcon(Icons.smartphone_rounded, AppColors.success, 0.8),
             ),
-          );
-        },
+            Positioned(
+              bottom: 200 + _floatingAnimation.value * 0.6,
+              left: 100,
+              child: _buildFloatingIcon(Icons.web_rounded, AppColors.secondary, 0.6),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFloatingIcon(IconData icon, Color color, double opacity) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2 * opacity),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3 * opacity),
+        ),
+      ),
+      child: Icon(
+        icon,
+        color: color.withOpacity(opacity),
+        size: 20,
       ),
     );
   }

@@ -297,6 +297,7 @@ class _TestimonialsState extends State<Testimonials>
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontSize: ScreenSize.isMobile(context) ? 32 : 48,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -311,7 +312,7 @@ class _TestimonialsState extends State<Testimonials>
                     'bekerja sama dengan Jostar Programming dalam mewujudkan visi digital.',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       height: 1.6,
-                      color: AppColors.textSecondary,
+                      color: AppColors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),

@@ -242,11 +242,11 @@ class _PremiumProductGridState extends State<PremiumProductGrid>
               : AppColors.primary,
         ),
         const Spacer(),
-        if (product.badge.isNotEmpty)
-          MicroAnimatedBadge(
-            text: product.badge,
-            color: _getBadgeColor(product.badge),
-          ),
+        // if (product.badge.isNotEmpty)
+        //   MicroAnimatedBadge(
+        //     text: product.badge,
+        //     color: _getBadgeColor(product.badge),
+        //   ),
       ],
     );
   }
@@ -320,20 +320,20 @@ class _PremiumProductGridState extends State<PremiumProductGrid>
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            EnhancedRatingWidget(rating: product.rating),
-            const Spacer(),
-            Text(
-              '${_formatDownloads(product.downloads)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.success,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
+        // Row(
+        //   children: [
+        //     EnhancedRatingWidget(rating: product.rating),
+        //     const Spacer(),
+        //     Text(
+        //       '${_formatDownloads(product.downloads)}',
+        //       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        //         color: AppColors.success,
+        //         fontWeight: FontWeight.w600,
+        //       ),
+        //     ),
+        //   ],
+        // ),
+        // const SizedBox(height: 12),
         AnimatedPriceWidget(product: product),
       ],
     );
@@ -448,30 +448,30 @@ class _PremiumProductGridState extends State<PremiumProductGrid>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      product.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (product.badge.isNotEmpty)
-                      MicroAnimatedBadge(
-                        text: product.badge,
-                        color: _getBadgeColor(product.badge),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${product.category} • ${_formatDownloads(product.downloads)} downloads',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
+                // Row(
+                //   children: [
+                //     Text(
+                //       product.name,
+                //       style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                //         fontWeight: FontWeight.w700,
+                //       ),
+                //     ),
+                //     const SizedBox(width: 8),
+                //     if (product.badge.isNotEmpty)
+                //       MicroAnimatedBadge(
+                //         text: product.badge,
+                //         color: _getBadgeColor(product.badge),
+                //       ),
+                //   ],
+                // ),
+                // const SizedBox(height: 4),
+                // Text(
+                //   '${product.category} • ${_formatDownloads(product.downloads)} downloads',
+                //   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                //     color: AppColors.textSecondary,
+                //   ),
+                // ),
+                // const SizedBox(height: 8),
                 EnhancedRatingWidget(rating: product.rating),
               ],
             ),

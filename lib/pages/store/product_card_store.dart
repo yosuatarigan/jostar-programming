@@ -153,34 +153,34 @@ class _EnhancedProductCardState extends State<EnhancedProductCard>
         ),
         
         // Badges
-        _buildBadges(),
+        // _buildBadges(),
       ],
     );
   }
 
-  Widget _buildBadges() {
-    return Positioned(
-      top: 12,
-      left: 12,
-      right: 12,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          if (widget.product.discount > 0)
-            GlassMorphismBadge(
-              text: '-${widget.product.discount}%',
-              color: AppColors.error,
-            ),
-          const Spacer(),
-          if (widget.product.badge.isNotEmpty)
-            GlassMorphismBadge(
-              text: widget.product.badge,
-              color: _getBadgeColor(widget.product.badge),
-            ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildBadges() {
+  //   return Positioned(
+  //     top: 12,
+  //     left: 12,
+  //     right: 12,
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         if (widget.product.discount > 0)
+  //           GlassMorphismBadge(
+  //             text: '-${widget.product.discount}%',
+  //             color: AppColors.error,
+  //           ),
+  //         const Spacer(),
+  //         if (widget.product.badge.isNotEmpty)
+  //           GlassMorphismBadge(
+  //             text: widget.product.badge,
+  //             color: _getBadgeColor(widget.product.badge),
+  //           ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildProductContent() {
     return Padding(
@@ -231,20 +231,20 @@ class _EnhancedProductCardState extends State<EnhancedProductCard>
           const SizedBox(height: 16),
           
           // Rating and Downloads
-          Row(
-            children: [
-              RatingWidget(rating: widget.product.rating),
-              const Spacer(),
-              Text(
-                '${_formatNumber(widget.product.downloads)}+ downloads',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     RatingWidget(rating: widget.product.rating),
+          //     const Spacer(),
+          //     Text(
+          //       '${_formatNumber(widget.product.)}+ downloads',
+          //       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          //         color: AppColors.textSecondary,
+          //       ),
+          //     ),
+          //   ],
+          // ),
           
-          const Spacer(),
+          // const Spacer(),
           
           // Price Section
           PriceSection(product: widget.product),

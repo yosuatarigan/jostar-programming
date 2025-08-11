@@ -226,24 +226,24 @@ class _AdvancedProductShowcaseState extends State<AdvancedProductShowcase>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Header with badges
-                  Row(
-                    children: [
-                      PremiumBadge(
-                        text: product.category,
-                        color: product.type == ProductType.readyApp 
-                            ? AppColors.accent 
-                            : AppColors.primary,
-                      ),
-                      const Spacer(),
-                      if (product.badge.isNotEmpty)
-                        GlassMorphismBadge(
-                          text: product.badge,
-                          color: _getBadgeColor(product.badge),
-                        ),
-                    ],
-                  ),
+                  // Row(
+                  //   children: [
+                  //     PremiumBadge(
+                  //       text: product.category,
+                  //       color: product.type == ProductType.readyApp 
+                  //           ? AppColors.accent 
+                  //           : AppColors.primary,
+                  //     ),
+                  //     const Spacer(),
+                  //     if (product.badge.isNotEmpty)
+                  //       GlassMorphismBadge(
+                  //         text: product.badge,
+                  //         color: _getBadgeColor(product.badge),
+                  //       ),
+                  //   ],
+                  // ),
                   
-                  const SizedBox(height: 20),
+                  // const SizedBox(height: 20),
                   
                   // Product Icon
                   Container(
